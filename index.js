@@ -7,17 +7,18 @@ import userRoute from "./routes/user.route.js";
 import companayRoute from "./routes/company.route.js";
 import jobroute from "./routes/job.route.js";
 import apllyJob from "./routes/aplication.route.js";
+// import path from "path"
+// import { fileURLToPath } from "url"
 dotenv.config({})
 
 const app = express()
 const PORT = 5000
-
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
 const corsOptions = {
-    origin: "http://localhost:5173",
+    origin: true,
     credentials: true,
 }
 
@@ -26,6 +27,11 @@ app.use("/api/auth", userRoute)
 app.use("/api/company", companayRoute)
 app.use("/api/job", jobroute)
 app.use("/api/applay", apllyJob)
+
+// app.use(express.static(path.join(__dirname, "client/dist")));
+// app.get("*", (req, res) => {
+//     res.sendFile(path.join(__dirname, "client", "dist", "index.html"));
+// });
 
 mongoose.connect(process.env.MONGO_URL)
 mongoose.connection.once("open", () => {

@@ -3,9 +3,8 @@ import isAuthenticated from "../middlewares/isAuthenticated.js"
 import { applyJob, getAplicant, getappliedJob, updateStatus } from "../controllers/aplication.controller.js"
 const router = express.Router()
 
-router
-    .post("/applyjob/:id", isAuthenticated, applyJob)
-    .get("/getapplyjob", isAuthenticated, getappliedJob)
-    .get("/:jobId/aplicants", isAuthenticated, getAplicant)
-    .put("/status/:id/update", isAuthenticated, updateStatus)
+router.post("/applyjob/:id", isAuthenticated, applyJob)
+router.get("/getapplyjob", isAuthenticated, getappliedJob)
+router.get("/:jobId/aplicants", isAuthenticated, getAplicant)
+router.put("/status/:id/update", isAuthenticated, updateStatus)
 export default router
