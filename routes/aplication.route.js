@@ -5,6 +5,6 @@ const router = express.Router()
 
 router.post("/applyjob/:id", isAuthenticated, applyJob)
 router.get("/getapplyjob", isAuthenticated, getappliedJob)
-router.get("/:jobId/aplicants", isAuthenticated, getAplicant)
+router.get("/:id/aplicants", isAuthenticated, getAplicant)
 router.put("/status/:id/update", isAuthenticated, updateStatus)
 export default router
