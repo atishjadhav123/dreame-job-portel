@@ -6,34 +6,37 @@ import cloudinary from "../utils/cloudinary.js"
 export const register = async (req, res) => {
     try {
         const { fullname, email, phonenumber, password, role } = req.body
-        // console.log(req.body)
-
-
         if (!fullname || !email || !phonenumber || !password || !role) {
             return res.status(400).json({ message: "somthing is missing", success: false })
         }
 
         const file = req.file
-        const fileUri = getDataUri(file)
-        const cloudResponce = await cloudinary.uploader.upload(fileUri.content)
-
+        let cloudResponce = null;
+        if (file) {
+            const fileUri = getDataUri(file);
+            cloudResponce = await cloudinary.uploader.upload(fileUri.content);
+        }
         const user = await User.findOne({ email })
         if (user) {
             return res.status(400).json({ message: "user alredy exist this email", success: false })
         }
         const hashpassword = await bcrypt.hash(password, 10)
 
-        await User.create({
+        const newUser = await User.create({
             fullname,
             email,
             phonenumber,
             password: hashpassword,
             role,
             profile: {
-                profilephoto: cloudResponce.secure_url
+                profilephoto: cloudResponce?.secure_url || ""
             }
         })
-        res.status(200).json({ message: "accound is created successfyly", User, success: true })
+        res.status(200).json({
+            message: "account is created successfully",
+            user: newUser,
+            success: true
+        })
     } catch (error) {
         console.log(error)
     }
@@ -74,7 +77,7 @@ export const login = async (req, res) => {
             },
             skills: user.skills
         }
-        return res.status(200).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpsOnly: true, sameSite: "strict" }).json({
+        return res.status(200).cookie("token", token, { maxAge: 1 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: "strict" }).json({
             message: `welcome back ${user.fullname}`,
             user,
             success: true
@@ -100,9 +103,11 @@ export const updateProfile = async (req, res) => {
         const { fullname, email, phonenumber, bio, skills } = req.body
 
         const file = req.file
-        const fileUri = getDataUri(file)
-        const cloudResponce = await cloudinary.uploader.upload(fileUri.content)
-
+        let cloudResponce = null;
+        if (file) {
+            const fileUri = getDataUri(file);
+            cloudResponce = await cloudinary.uploader.upload(fileUri.content);
+        }
 
 
         let skillsArry
