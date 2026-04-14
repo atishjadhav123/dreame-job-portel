@@ -61,32 +61,59 @@ export const getCompantById = async (req, res) => {
 
 export const updateCompany = async (req, res) => {
     try {
-        if (!req.body) {
-            return res.status(400).json({ message: "No form data received", success: false });
+        const { name, desc, website, location } = req.body;
+
+        const file = req.files?.file?.[0]; // ✅ FIX
+
+        let logo;
+
+        // ✅ file check
+        if (file) {
+            const fileUri = getDataUri(file);
+
+            const cloudresponce = await cloudinary.uploader.upload(fileUri.content, {
+                folder: "dreamjob/company"
+            });
+
+            logo = cloudresponce.secure_url;
         }
 
-        const { name, desc, website, location } = req.body;
-        const file = req.file;
+        const updateData = {
+            name,
+            desc,
+            website,
+            location,
+        };
 
-        const fileUri = getDataUri(file)
-        const cloudresponce = await cloudinary.uploader.upload(fileUri.content)
-        const logo = cloudresponce.secure_url
+        // ✅ only add logo if exists
+        if (logo) {
+            updateData.logo = logo;
+        }
 
-        const updateData = { name, desc, website, location, logo };
-
-        const company = await Company.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        const company = await Company.findByIdAndUpdate(
+            req.params.id,
+            updateData,
+            { new: true }
+        );
 
         if (!company) {
-            return res.status(404).json({ message: "Company not found", success: false });
+            return res.status(404).json({
+                message: "Company not found",
+                success: false
+            });
         }
 
         return res.status(200).json({
-            message: "Company information updated",
+            message: "Company updated successfully",
             success: true,
             company,
         });
+
     } catch (error) {
         console.error("Update Company Error:", error);
-        res.status(500).json({ message: "Server error", success: false });
+        res.status(500).json({
+            message: "Server error",
+            success: false
+        });
     }
 };

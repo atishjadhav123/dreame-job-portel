@@ -14,7 +14,9 @@ export const register = async (req, res) => {
         let cloudResponce = null;
         if (file) {
             const fileUri = getDataUri(file);
-            cloudResponce = await cloudinary.uploader.upload(fileUri.content);
+            cloudResponce = await cloudinary.uploader.upload(fileUri.content, {
+                folder: "dreamjob/profile"
+            });
         }
         const user = await User.findOne({ email })
         if (user) {
@@ -29,7 +31,8 @@ export const register = async (req, res) => {
             password: hashpassword,
             role,
             profile: {
-                profilephoto: cloudResponce?.secure_url || ""
+                profilephoto: cloudResponce?.secure_url || "",
+                public_id: cloudResponce?.public_id || ""
             }
         })
         res.status(200).json({
@@ -100,51 +103,75 @@ export const logout = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
     try {
-        const { fullname, email, phonenumber, bio, skills } = req.body
+        const { fullname, email, phonenumber, bio, skills } = req.body;
 
-        const file = req.file
-        let cloudResponce = null;
-        if (file) {
-            const fileUri = getDataUri(file);
-            cloudResponce = await cloudinary.uploader.upload(fileUri.content);
-        }
+        const userId = req.id;
+        let user = await User.findById(userId);
 
-
-        let skillsArry
-        if (skills) {
-            skillsArry = skills.split(",")
-        }
-        const userId = req.id
-        let user = await User.findById(userId)
         if (!user) {
-            return res.status(400).json({ message: "user not found", success: false })
-        }
-        if (fullname) user.fullname = fullname
-        if (email) user.email = email
-        if (phonenumber) user.phonenumber = phonenumber
-        if (bio) user.profile.bio = bio
-        if (skills) user.profile.skills = skillsArry
-
-        if (cloudResponce) {
-            user.profile.resume = cloudResponce.secure_url
-            user.profile.resumeorignalname = file.originalname
+            return res.status(400).json({ message: "user not found", success: false });
         }
 
-        await user.save()
-
-
-        user = {
-            _id: user._id,
-            fullname: user.fullname,
-            email: user.email,
-            phonenumber: user.phonenumber,
-            role: user.role,
-            profile: user.profile,
+        if (!user.profile) {
+            user.profile = {};
         }
 
-        return res.status(200).json({ message: "profile update successfully", user, success: true })
+        // 👇 MULTIPLE FILES HANDLE KARO
+        const profileImage = req.files?.profileImage?.[0];
+        const resume = req.files?.resume?.[0];
+
+        // ===== PROFILE IMAGE =====
+        if (profileImage) {
+            // OLD DELETE
+            if (user.profile.public_id) {
+                await cloudinary.uploader.destroy(user.profile.public_id);
+            }
+
+            const fileUri = getDataUri(profileImage);
+
+            const uploadResponse = await cloudinary.uploader.upload(fileUri.content, {
+                folder: "dreamjob/profile"
+            });
+
+            // ✅ SAVE BOTH
+            user.profile.profilephoto = uploadResponse.secure_url;
+            user.profile.public_id = uploadResponse.public_id;
+        }
+        ;
+        // ===== RESUME =====
+        if (resume) {
+            const fileUri = getDataUri(resume);
+
+            const uploadResponse = await cloudinary.uploader.upload(fileUri.content, {
+                folder: "dreamjob/resume",
+                resource_type: "raw"
+            });
+
+            // ✅ ONLY RESUME
+            user.profile.resume = uploadResponse.secure_url;
+            user.profile.resume_public_id = uploadResponse.public_id; // optional best practice
+        }
+
+        // ===== OTHER FIELDS =====
+        if (fullname) user.fullname = fullname;
+        if (email) user.email = email;
+        if (phonenumber) user.phonenumber = phonenumber;
+        if (bio) user.profile.bio = bio;
+        if (skills) user.profile.skills = skills.split(",");
+
+        await user.save();
+
+        return res.status(200).json({
+            message: "profile updated successfully",
+            user,
+            success: true
+        });
+
     } catch (error) {
-        console.log(error)
-
+        console.log("ERROR:", error);
+        return res.status(500).json({
+            message: "Internal server error",
+            success: false
+        });
     }
-}
+};

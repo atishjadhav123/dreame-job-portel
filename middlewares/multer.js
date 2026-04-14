@@ -2,4 +2,8 @@ import multer from 'multer'
 
 const storage = multer.memoryStorage()
 
-export const singleupload = multer({ storage }).single("file")
+export const upload = multer({ storage }).fields([
+    { name: "file", maxCount: 1 },
+    { name: "profileImage", maxCount: 1 },
+    { name: "resume", maxCount: 1 }
+]);

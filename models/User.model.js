@@ -9,9 +9,18 @@ const userSchema = new mongoose.Schema({
         bio: { type: String },
         skills: { type: [String] },
         resume: { type: String },
+        resume_original_name: { type: String },
+        resume_public_id: {
+            type: String,
+            default: ""
+        },
         resumeorignalname: { type: String },
         company: { type: mongoose.Schema.Types.ObjectId, ref: "compnay" },
         profilephoto: {
+            type: String,
+            default: ""
+        },
+        public_id: {
             type: String,
             default: ""
         }
